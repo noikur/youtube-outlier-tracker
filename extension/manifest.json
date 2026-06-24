@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Outlier Tracker",
+  "version": "1.0",
+  "description": "Flags videos that dramatically outperform their channel's normal output — in real time as you browse.",
+
+  "permissions": ["storage"],
+
+  "host_permissions": [
+    "*://www.youtube.com/*",
+    "http://localhost:8000/*"
+  ],
+
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Outlier Tracker"
+  }
+}

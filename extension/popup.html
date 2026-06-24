@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube Outlier Tracker</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 280px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 13px;
+      color: #1f2937;
+      background: #ffffff;
+    }
+
+    .header {
+      background: #111827;
+      color: white;
+      padding: 14px 16px;
+    }
+    .header h1 {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .header p {
+      font-size: 11px;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot--green  { background: #22c55e; }
+    .dot--red    { background: #ef4444; }
+    .dot--yellow { background: #f59e0b; }
+
+    .status-label {
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .stats {
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .stat {
+      flex: 1;
+      text-align: center;
+    }
+    .stat-number {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.2;
+    }
+    .stat-label {
+      font-size: 10px;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 2px;
+    }
+
+    .legend {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .legend-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      margin-bottom: 6px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .badge-pill {
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: white;
+    }
+    .badge-pill--fire  { background: #dc2626; }
+    .badge-pill--spark { background: #d97706; }
+    .badge-pill--low   { background: #2563eb; }
+
+    .instructions {
+      padding: 10px 16px;
+      background: #f9fafb;
+    }
+    .instructions p {
+      font-size: 11px;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+    .instructions code {
+      font-family: 'Courier New', monospace;
+      background: #e5e7eb;
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>YouTube Outlier Tracker</h1>
+    <p>Badges on videos that beat their channel's normal output</p>
+  </div>
+
+  <div class="status-row">
+    <div class="dot" id="status-dot"></div>
+    <span class="status-label" id="status-text">Checking...</span>
+  </div>
+
+  <div class="stats" id="stats" style="display:none">
+    <div class="stat">
+      <div class="stat-number" id="stat-channels">—</div>
+      <div class="stat-label">Channels tracked</div>
+    </div>
+    <div class="stat">
+      <div class="stat-number" id="stat-outliers">—</div>
+      <div class="stat-label">Outliers logged</div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-title">Badge guide</div>
+    <div class="legend-item">
+      <span class="badge-pill badge-pill--fire">🔥 10x+</span>
+      <span>Major outlier — rare, high signal</span>
+    </div>
+    <div class="legend-item">
+      <span class="badge-pill badge-pill--spark">⚡ 3–10x</span>
+      <span>Solid outlier — clear breakout</span>
+    </div>
+    <div class="legend-item">
+      <span class="badge-pill badge-pill--low">↑ 2–3x</span>
+      <span>Moderate — above channel average</span>
+    </div>
+  </div>
+
+  <div class="instructions" id="instructions" style="display:none">
+    <p>Backend not running. Open a terminal in your project folder and run:<br>
+    <code>python run_api.py</code></p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
