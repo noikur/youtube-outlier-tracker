@@ -28,7 +28,7 @@
  * extension adds nothing and breaks nothing when the server is off.
  */
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://youtube-outlier-tracker-production.up.railway.app';
 const PROCESSED_ATTR = 'data-outlier-checked';
 const BADGE_CLASS = 'yt-outlier-badge';
 
@@ -82,7 +82,7 @@ function injectBadge(card, scoreData) {
     badge.classList.add('yt-outlier-badge--low');
   }
 
-  badge.textContent = scoreData.badge_text;
+  badge.textContent = `${scoreData.multiplier}x`;
   badge.title = `${scoreData.channel_title}: ${scoreData.multiplier}x normal\nz=${scoreData.z_score}`;
 
   card.style.position = 'relative';

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Outlier Tracker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f9fafb;
+  color: #111827;
+  min-height: 100vh;
+}
+.topbar {
+  background: #111827;
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.topbar-left { display: flex; align-items: center; gap: 12px; }
+.topbar-logo {
+  width: 28px; height: 28px;
+  background: #1f2937;
+  border: 0.5px solid #374151;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.topbar-title { font-size: 14px; font-weight: 500; color: #ffffff; }
+.topbar-sub { font-size: 12px; color: #6b7280; margin-left: 8px; }
+.status-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  background: rgba(34,197,94,0.15);
+  color: #22c55e;
+}
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+.main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.metric {
+  background: #ffffff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+.metric-val { font-size: 24px; font-weight: 500; }
+.metric-label { font-size: 12px; color: #9ca3af; margin-top: 4px; }
+.metric-delta { font-size: 12px; color: #22c55e; margin-top: 4px; }
+.section-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+.section-title { font-size: 15px; font-weight: 500; }
+.section-sub { font-size: 12px; color: #9ca3af; margin-top: 2px; }
+.refresh-btn {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 14px;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  font-size: 12px;
+  color: #6b7280;
+  cursor: pointer;
+}
+.refresh-btn:hover { background: #f9fafb; }
+.table-wrap {
+  background: #ffffff;
+  border: 0.5px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.table-header {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 100px 130px;
+  gap: 12px;
+  padding: 10px 20px;
+  border-bottom: 0.5px solid #e5e7eb;
+  background: #f9fafb;
+}
+.th {
+  font-size: 11px; font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  color: #9ca3af;
+}
+.th:not(:first-child) { text-align: right; }
+.table-row {
+  display: grid;
+  grid-template-columns: 1fr 90px 90px 100px 130px;
+  gap: 12px;
+  padding: 12px 20px;
+  border-bottom: 0.5px solid #f3f4f6;
+  align-items: center;
+  transition: background 0.1s;
+}
+.table-row:last-child { border-bottom: none; }
+.table-row:hover { background: #f9fafb; }
+.vid-title {
+  font-size: 13px; font-weight: 500;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 360px;
+}
+.vid-channel { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+.vid-link { text-decoration: none; color: inherit; }
+.vid-link:hover .vid-title { color: #2563eb; }
+.cell { font-size: 13px; text-align: right; color: #374151; }
+.cell-muted { color: #9ca3af; }
+.mult {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 20px;
+  font-size: 11px; font-weight: 500;
+  float: right;
+}
+.mult-fire { background: #fef2f2; color: #dc2626; }
+.mult-spark { background: #fffbeb; color: #d97706; }
+.mult-low { background: #eff6ff; color: #2563eb; }
+.dot { width: 5px; height: 5px; border-radius: 50%; }
+.dot-fire { background: #ef4444; }
+.dot-spark { background: #f59e0b; }
+.dot-low { background: #3b82f6; }
+.empty {
+  padding: 48px 20px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+.loading { padding: 48px 20px; text-align: center; color: #9ca3af; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="topbar-logo">📊</div>
+    <span class="topbar-title">Outlier Tracker</span>
+    <span class="topbar-sub">YouTube performance intel</span>
+  </div>
+  <div class="status-pill">
+    <div class="status-dot"></div>
+    Live
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="metrics" id="metrics">
+    <div class="metric">
+      <div class="metric-val" id="m-channels">—</div>
+      <div class="metric-label">Channels tracked</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-outliers">—</div>
+      <div class="metric-label">Outliers logged</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val" id="m-top">—</div>
+      <div class="metric-label">Top multiplier</div>
+    </div>
+    <div class="metric">
+      <div class="metric-val">3</div>
+      <div class="metric-label">Quota units used</div>
+      <div class="metric-delta">of 10,000 daily</div>
+    </div>
+  </div>
+
+  <div class="section-header">
+    <div>
+      <div class="section-title">Outlier feed</div>
+      <div class="section-sub" id="last-updated">Loading...</div>
+    </div>
+    <button class="refresh-btn" onclick="loadData()">
+      ↻ Refresh
+    </button>
+  </div>
+
+  <div class="table-wrap">
+    <div class="table-header">
+      <div class="th">Video</div>
+      <div class="th">Multiplier</div>
+      <div class="th">Z-score</div>
+      <div class="th">Views</div>
+      <div class="th">Detected</div>
+    </div>
+    <div id="table-body">
+      <div class="loading">Loading outliers...</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function formatNum(n) {
+  if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+  return n.toLocaleString();
+}
+
+function timeAgo(iso) {
+  if (!iso) return '—';
+  const diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff/60) + ' min ago';
+  if (diff < 86400) return Math.floor(diff/3600) + ' hr ago';
+  return Math.floor(diff/86400) + ' days ago';
+}
+
+function multClass(m) {
+  if (m >= 10) return 'mult-fire';
+  if (m >= 3) return 'mult-spark';
+  return 'mult-low';
+}
+
+function dotClass(m) {
+  if (m >= 10) return 'dot-fire';
+  if (m >= 3) return 'dot-spark';
+  return 'dot-low';
+}
+
+async function loadData() {
+  try {
+    const res = await fetch('/api/stats');
+    const data = await res.json();
+
+    document.getElementById('m-channels').textContent = data.channels_tracked;
+    document.getElementById('m-outliers').textContent = data.outliers_logged;
+    document.getElementById('m-top').textContent =
+      data.top_multiplier ? data.top_multiplier.toFixed(1) + 'x' : '—';
+    document.getElementById('last-updated').textContent =
+      'Updated ' + new Date().toLocaleTimeString();
+
+    const body = document.getElementById('table-body');
+    if (!data.outliers || data.outliers.length === 0) {
+      body.innerHTML = '<div class="empty">No outliers logged yet. Run the tracker or browse YouTube with the extension.</div>';
+      return;
+    }
+
+    body.innerHTML = data.outliers.map(o => `
+      <div class="table-row">
+        <div>
+          <a class="vid-link" href="https://youtube.com/watch?v=${o.video_id}" target="_blank">
+            <div class="vid-title">${o.title}</div>
+            <div class="vid-channel">${o.channel_id}</div>
+          </a>
+        </div>
+        <div>
+          <span class="mult ${multClass(o.multiplier)}">
+            <span class="dot ${dotClass(o.multiplier)}"></span>
+            ${o.multiplier.toFixed(2)}x
+          </span>
+        </div>
+        <div class="cell">${o.z_score.toFixed(1)}</div>
+        <div class="cell">${formatNum(o.view_count)}</div>
+        <div class="cell cell-muted">${timeAgo(o.first_seen_at)}</div>
+      </div>
+    `).join('');
+
+  } catch(e) {
+    document.getElementById('table-body').innerHTML =
+      '<div class="empty">Could not load data. Make sure the backend is running.</div>';
+  }
+}
+
+loadData();
+</script>
+</body>
+</html>

@@ -2,168 +2,154 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube Outlier Tracker</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      width: 280px;
+      width: 300px;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 13px;
-      color: #1f2937;
+      color: #111827;
       background: #ffffff;
     }
-
     .header {
-      background: #111827;
-      color: white;
-      padding: 14px 16px;
-    }
-    .header h1 {
-      font-size: 14px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
-    }
-    .header p {
-      font-size: 11px;
-      color: #9ca3af;
-      margin-top: 2px;
-    }
-
-    .status-row {
+      padding: 14px 16px 12px;
+      border-bottom: 0.5px solid #e5e7eb;
       display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 12px 16px;
-      border-bottom: 1px solid #f3f4f6;
+      gap: 10px;
+      background: #111827;
     }
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
+    .logo {
+      width: 28px; height: 28px;
+      border-radius: 6px;
+      background: #1f2937;
+      border: 0.5px solid #374151;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
     }
-    .dot--green  { background: #22c55e; }
-    .dot--red    { background: #ef4444; }
-    .dot--yellow { background: #f59e0b; }
-
-    .status-label {
-      font-weight: 600;
-      font-size: 12px;
+    .header-text { flex: 1; }
+    .title { font-size: 13px; font-weight: 500; color: #ffffff; }
+    .subtitle { font-size: 11px; color: #6b7280; margin-top: 1px; }
+    .status-pill {
+      display: flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
     }
-
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .status-online { background: #f0fdf4; color: #16a34a; }
+    .status-online .status-dot { background: #22c55e; }
+    .status-offline { background: #fef2f2; color: #dc2626; }
+    .status-offline .status-dot { background: #ef4444; }
     .stats {
-      padding: 12px 16px;
-      display: flex;
-      gap: 12px;
-      border-bottom: 1px solid #f3f4f6;
+      display: grid; grid-template-columns: 1fr 1fr;
+      border-bottom: 0.5px solid #e5e7eb;
     }
     .stat {
-      flex: 1;
-      text-align: center;
+      padding: 14px 16px;
     }
-    .stat-number {
-      font-size: 22px;
-      font-weight: 700;
-      color: #111827;
-      line-height: 1.2;
+    .stat:first-child { border-right: 0.5px solid #e5e7eb; }
+    .stat-num { font-size: 22px; font-weight: 500; }
+    .stat-label { font-size: 11px; color: #9ca3af; margin-top: 2px; }
+    .section {
+      padding: 12px 16px;
+      border-bottom: 0.5px solid #e5e7eb;
     }
-    .stat-label {
-      font-size: 10px;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 2px;
+    .section-title {
+      font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #9ca3af;
+      font-weight: 500; margin-bottom: 8px;
     }
-
-    .legend {
+    .legend-row {
+      display: flex; align-items: center;
+      gap: 8px; margin-bottom: 6px;
+    }
+    .legend-row:last-child { margin-bottom: 0; }
+    .legend-pill {
+      display: flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 20px;
+      font-size: 11px; font-weight: 500;
+      background: rgba(17,24,39,0.08);
+      color: #111827; min-width: 52px;
+    }
+    .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .dot-fire { background: #ef4444; }
+    .dot-spark { background: #f59e0b; }
+    .dot-low { background: #3b82f6; }
+    .legend-text { font-size: 12px; color: #6b7280; }
+    .footer {
       padding: 10px 16px;
-      border-bottom: 1px solid #f3f4f6;
+      display: flex; align-items: center;
+      justify-content: space-between;
     }
-    .legend-title {
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: #6b7280;
-      margin-bottom: 6px;
+    .footer-text { font-size: 11px; color: #9ca3af; }
+    .footer-link {
+      font-size: 11px; color: #2563eb;
+      text-decoration: none;
+      display: flex; align-items: center; gap: 3px;
     }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-    .badge-pill {
-      padding: 1px 7px;
-      border-radius: 10px;
-      font-size: 11px;
-      font-weight: 700;
-      color: white;
-    }
-    .badge-pill--fire  { background: #dc2626; }
-    .badge-pill--spark { background: #d97706; }
-    .badge-pill--low   { background: #2563eb; }
-
-    .instructions {
+    .offline-msg {
       padding: 10px 16px;
-      background: #f9fafb;
-    }
-    .instructions p {
-      font-size: 11px;
-      color: #6b7280;
+      font-size: 11px; color: #6b7280;
       line-height: 1.5;
+      border-top: 0.5px solid #e5e7eb;
     }
-    .instructions code {
-      font-family: 'Courier New', monospace;
-      background: #e5e7eb;
-      padding: 1px 4px;
-      border-radius: 3px;
-      font-size: 10px;
+    .offline-msg code {
+      background: #f3f4f6; padding: 1px 4px;
+      border-radius: 3px; font-size: 10px;
     }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>YouTube Outlier Tracker</h1>
-    <p>Badges on videos that beat their channel's normal output</p>
-  </div>
-
-  <div class="status-row">
-    <div class="dot" id="status-dot"></div>
-    <span class="status-label" id="status-text">Checking...</span>
+    <div class="logo">📊</div>
+    <div class="header-text">
+      <div class="title">Outlier Tracker</div>
+      <div class="subtitle">YouTube performance intel</div>
+    </div>
+    <div class="status-pill" id="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Checking...</span>
+    </div>
   </div>
 
   <div class="stats" id="stats" style="display:none">
     <div class="stat">
-      <div class="stat-number" id="stat-channels">—</div>
+      <div class="stat-num" id="stat-channels">—</div>
       <div class="stat-label">Channels tracked</div>
     </div>
     <div class="stat">
-      <div class="stat-number" id="stat-outliers">—</div>
+      <div class="stat-num" id="stat-outliers">—</div>
       <div class="stat-label">Outliers logged</div>
     </div>
   </div>
 
-  <div class="legend">
-    <div class="legend-title">Badge guide</div>
-    <div class="legend-item">
-      <span class="badge-pill badge-pill--fire">🔥 10x+</span>
-      <span>Major outlier — rare, high signal</span>
+  <div class="section">
+    <div class="section-title">Badge guide</div>
+    <div class="legend-row">
+      <div class="legend-pill"><div class="dot dot-fire"></div>10x+</div>
+      <div class="legend-text">Major outlier — rare, high signal</div>
     </div>
-    <div class="legend-item">
-      <span class="badge-pill badge-pill--spark">⚡ 3–10x</span>
-      <span>Solid outlier — clear breakout</span>
+    <div class="legend-row">
+      <div class="legend-pill"><div class="dot dot-spark"></div>3–10x</div>
+      <div class="legend-text">Solid breakout</div>
     </div>
-    <div class="legend-item">
-      <span class="badge-pill badge-pill--low">↑ 2–3x</span>
-      <span>Moderate — above channel average</span>
+    <div class="legend-row">
+      <div class="legend-pill"><div class="dot dot-low"></div>2–3x</div>
+      <div class="legend-text">Above channel average</div>
     </div>
   </div>
 
-  <div class="instructions" id="instructions" style="display:none">
-    <p>Backend not running. Open a terminal in your project folder and run:<br>
-    <code>python run_api.py</code></p>
+  <div class="footer">
+    <div class="footer-text" id="last-scan">—</div>
+    <a class="footer-link" href="#" id="dash-link">
+      Dashboard ↗
+    </a>
+  </div>
+
+  <div class="offline-msg" id="offline-msg" style="display:none">
+    Backend not running. Start it with:<br>
+    <code>python run_api.py</code>
   </div>
 
   <script src="popup.js"></script>

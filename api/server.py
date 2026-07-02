@@ -256,3 +256,36 @@ def score_videos_endpoint(request: ScoreRequest):
                 ).model_dump()
 
     return {"results": results, "quota_used": quota.used}
+
+from fastapi.responses import HTMLResponse
+
+@app.get("/api/stats")
+def get_stats():
+    """Returns summary stats for the dashboard."""
+    db.init_db()
+    outliers = db.get_all_outliers()
+    active = db.get_active_channel_ids()
+    return {
+        "channels_tracked": len(active),
+        "outliers_logged": len(outliers),
+        "top_multiplier": max((o["multiplier"] for o in outliers), default=0),
+        "outliers": [
+            {
+                "video_id": o["video_id"],
+                "title": o["title"],
+                "channel_id": o["channel_id"],
+                "multiplier": o["multiplier"],
+                "z_score": o["z_score"],
+                "view_count": o["view_count"],
+                "first_seen_at": o["first_seen_at"],
+                "last_seen_at": o["last_seen_at"],
+            }
+            for o in outliers[:50]
+        ]
+    }
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    """Serves the dashboard webpage."""
+    return HTMLResponse(content=open("dashboard.html").read())
