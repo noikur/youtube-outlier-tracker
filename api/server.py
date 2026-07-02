@@ -199,8 +199,8 @@ def score_videos_endpoint(request: ScoreRequest):
             # a video isn't partly scored against itself
             this_baseline = [v for vid_id, v in history
                              if vid_id != snap.video_id][:20]
-
-            if len(this_baseline) < 3:
+            
+            if len(this_baseline) < 10:
                 results[snap.video_id] = VideoScore(
                     video_id=snap.video_id,
                     video_title=snap.title,
@@ -212,6 +212,18 @@ def score_videos_endpoint(request: ScoreRequest):
                 ).model_dump()
                 continue
 
+            baseline_mean = sum(this_baseline) / len(this_baseline)
+            if baseline_mean < 1000:
+                results[snap.video_id] = VideoScore(
+                    video_id=snap.video_id,
+                    video_title=snap.title,
+                    channel_id=channel_id,
+                    channel_title=channel_title,
+                    is_outlier=False,
+                    badge_text="",
+                    status="insufficient_data",
+                ).model_dump()
+                continue
             try:
                 scored = score_video(
                     candidate_views=snap.view_count,
@@ -287,8 +299,31 @@ def get_stats():
         ]
     }
 
-
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard():
     """Serves the dashboard webpage."""
     return HTMLResponse(content=open("dashboard.html").read())
+
+@app.delete("/api/outliers/clean")
+def clean_outliers():
+    """Remove outliers from channels with insufficient baseline quality."""
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM outlier_log
+                WHERE video_id IN (
+                    SELECT o.video_id
+                    FROM outlier_log o
+                    JOIN (
+                        SELECT channel_id,
+                               AVG(view_count) as avg_views,
+                               COUNT(DISTINCT video_id) as video_count
+                        FROM video_snapshots
+                        GROUP BY channel_id
+                    ) stats ON o.channel_id = stats.channel_id
+                    WHERE stats.avg_views < 1000
+                    OR stats.video_count < 10
+                )
+            """)
+            deleted = cur.rowcount
+    return {"deleted": deleted}
