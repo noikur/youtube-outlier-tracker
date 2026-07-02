@@ -48,9 +48,24 @@ app = FastAPI(title="YouTube Outlier Tracker API", version="1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["POST", "GET"],
+    allow_methods=["POST", "GET", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    allow_credentials=False,
 )
+
+from fastapi import Request
+from fastapi.responses import Response
+
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str, request: Request):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 # Videos with fewer than this many total views are brand-new and can't
 # be scored meaningfully yet (a 200-view video will look like a massive
