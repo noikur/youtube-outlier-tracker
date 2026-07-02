@@ -23,7 +23,8 @@ async function updatePopup() {
 
     document.getElementById('stat-channels').textContent =
       data.tracked_channels ?? '—';
-    document.getElementById('stat-outliers').textContent = '—';
+    document.getElementById('stat-outliers').textContent =
+      data.outliers_logged ?? '—';
     scan.textContent = 'Updated just now';
     document.getElementById('dash-link').href = 'https://youtube-outlier-tracker-production.up.railway.app/dashboard';
 

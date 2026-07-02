@@ -143,7 +143,7 @@ body {
 
 <div class="topbar">
   <div class="topbar-left">
-    <div class="topbar-logo">📊</div>
+    <div class="topbar-logo"></div>
     <span class="topbar-title">Outlier Tracker</span>
     <span class="topbar-sub">YouTube performance intel</span>
   </div>
@@ -251,8 +251,7 @@ async function loadData() {
         <div>
           <a class="vid-link" href="https://youtube.com/watch?v=${o.video_id}" target="_blank">
             <div class="vid-title">${o.title}</div>
-            <div class="vid-channel">${o.channel_id}</div>
-          </a>
+            <div class="vid-channel">${o.channel_title || o.channel_id}</div>          </a>
         </div>
         <div>
           <span class="mult ${multClass(o.multiplier)}">
@@ -276,3 +275,4 @@ loadData();
 </script>
 </body>
 </html>
+

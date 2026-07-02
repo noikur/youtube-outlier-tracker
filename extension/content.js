@@ -85,8 +85,11 @@ function injectBadge(card, scoreData) {
   badge.textContent = `${scoreData.multiplier}x`;
   badge.title = `${scoreData.channel_title}: ${scoreData.multiplier}x normal\nz=${scoreData.z_score}`;
 
-  card.style.position = 'relative';
-  card.appendChild(badge);
+  const thumbnail = card.querySelector('yt-image, img, ytd-thumbnail, a#thumbnail');
+  const target = thumbnail || card;
+  target.style.position = 'relative';
+  target.style.overflow = 'visible';
+  target.appendChild(badge);
 }
 
 async function fetchScores(videoIdToCard) {

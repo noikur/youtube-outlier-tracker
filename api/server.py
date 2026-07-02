@@ -87,10 +87,12 @@ class VideoScore(BaseModel):
 def health():
     """The extension polls this on startup to check the server is running."""
     db.init_db()
+    outliers = db.get_all_outliers()
     return {
         "status": "ok",
         "db": str(db.DB_PATH),
         "tracked_channels": len(db.get_active_channel_ids()),
+        "outliers_logged": len(outliers),
     }
 
 
@@ -175,7 +177,7 @@ def score_videos_endpoint(request: ScoreRequest):
             )
 
         # --------------------------------------------------------------
-        # Step 3: Score each video from this channel
+        # Step 3: Score each video from this channel 
         # --------------------------------------------------------------
         channel_title = channel_titles.get(channel_id, channel_id)
         baseline_views = [v for _, v in history]
@@ -274,6 +276,7 @@ def get_stats():
                 "video_id": o["video_id"],
                 "title": o["title"],
                 "channel_id": o["channel_id"],
+                "channel_title": db.get_channel_title(o["channel_id"]) or o["channel_id"],
                 "multiplier": o["multiplier"],
                 "z_score": o["z_score"],
                 "view_count": o["view_count"],
