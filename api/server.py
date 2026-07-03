@@ -247,6 +247,37 @@ def score_videos_endpoint(request: ScoreRequest):
                     status="insufficient_data",
                 ).model_dump()
                 continue
+
+            # Filter out auto-generated Topic channels
+            if channel_title and channel_title.endswith("- Topic"):
+                results[snap.video_id] = VideoScore(
+                    video_id=snap.video_id,
+                    video_title=snap.title,
+                    channel_id=channel_id,
+                    channel_title=channel_title,
+                    is_outlier=False,
+                    badge_text="",
+                    status="insufficient_data",
+                ).model_dump()
+                continue
+
+            # Cap baseline variance check -- if stdev is extreme relative
+            # to mean, the baseline is too noisy to trust
+            baseline_stdev = (
+                sum((v - baseline_mean) ** 2 for v in this_baseline) / len(this_baseline)
+            ) ** 0.5
+            coefficient_of_variation = baseline_stdev / baseline_mean if baseline_mean else 0
+            if coefficient_of_variation > 3.0:
+                results[snap.video_id] = VideoScore(
+                    video_id=snap.video_id,
+                    video_title=snap.title,
+                    channel_id=channel_id,
+                    channel_title=channel_title,
+                    is_outlier=False,
+                    badge_text="",
+                    status="insufficient_data",
+                ).model_dump()
+                continue
             try:
                 scored = score_video(
                     candidate_views=snap.view_count,
@@ -346,6 +377,31 @@ def clean_outliers():
                     ) stats ON o.channel_id = stats.channel_id
                     WHERE stats.avg_views < 1000
                     OR stats.video_count < 10
+                )
+            """)
+            deleted = cur.rowcount
+    return {"deleted": deleted}
+
+@app.delete("/api/outliers/clear-all")
+def clear_all_outliers():
+    """Clear entire outlier log to start fresh with quality filter."""
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM outlier_log")
+            deleted = cur.rowcount
+    return {"deleted": deleted}
+
+@app.delete("/api/outliers/clean-topic")
+def clean_topic_outliers():
+    """Remove Topic channel and extreme multiplier outliers."""
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                DELETE FROM outlier_log
+                WHERE multiplier > 500
+                OR channel_id IN (
+                    SELECT channel_id FROM channels
+                    WHERE title LIKE '%- Topic'
                 )
             """)
             deleted = cur.rowcount
