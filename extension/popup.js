@@ -1,5 +1,3 @@
-const API_BASE = 'https://youtube-outlier-tracker-production.up.railway.app';
-
 async function updatePopup() {
   const pill    = document.getElementById('status-pill');
   const dot     = document.getElementById('status-dot');
@@ -9,14 +7,17 @@ async function updatePopup() {
   const scan    = document.getElementById('last-scan');
 
   try {
-    const res = await fetch(`${API_BASE}/api/health`, {
-      signal: AbortSignal.timeout(3000)
+    const result = await new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage({ type: 'FETCH_HEALTH' }, response => {
+        if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+        else resolve(response);
+      });
     });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
+
+    if (!result.ok) throw new Error(result.error);
+    const data = result.data;
 
     pill.className = 'status-pill status-online';
-    dot.className  = 'status-dot';
     text.textContent = 'Live';
     stats.style.display = 'grid';
     offline.style.display = 'none';
@@ -26,11 +27,11 @@ async function updatePopup() {
     document.getElementById('stat-outliers').textContent =
       data.outliers_logged ?? '—';
     scan.textContent = 'Updated just now';
-    document.getElementById('dash-link').href = 'https://youtube-outlier-tracker-production.up.railway.app/dashboard';
+    document.getElementById('dash-link').href =
+      'https://youtube-outlier-tracker-production.up.railway.app/dashboard';
 
   } catch {
     pill.className = 'status-pill status-offline';
-    dot.className  = 'status-dot';
     text.textContent = 'Offline';
     stats.style.display = 'none';
     offline.style.display = 'block';

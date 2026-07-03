@@ -103,12 +103,20 @@ def health():
     """The extension polls this on startup to check the server is running."""
     db.init_db()
     outliers = db.get_all_outliers()
-    return {
-        "status": "ok",
-        "db": str(db.DB_PATH),
-        "tracked_channels": len(db.get_active_channel_ids()),
-        "outliers_logged": len(outliers),
-    }
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        content={
+            "status": "ok",
+            "db": str(db.DB_PATH),
+            "tracked_channels": len(db.get_active_channel_ids()),
+            "outliers_logged": len(outliers),
+        },
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "*",
+        }
+    )
 
 
 @app.post("/api/score")

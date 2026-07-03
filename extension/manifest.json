@@ -8,7 +8,8 @@
 
   "host_permissions": [
     "*://www.youtube.com/*",
-    "http://localhost:8000/*"
+    "http://localhost:8000/*",
+    "https://youtube-outlier-tracker-production.up.railway.app/*"
   ],
 
   "content_scripts": [
