@@ -39,6 +39,7 @@ from pydantic import BaseModel
 from src.youtube_client import YouTubeClient, QuotaTracker, YouTubeAPIError
 from src.outlier_engine import score_video
 from src import db
+import psycopg2.extras
 
 app = FastAPI(title="YouTube Outlier Tracker API", version="1.0")
 
@@ -406,3 +407,55 @@ def clean_topic_outliers():
             """)
             deleted = cur.rowcount
     return {"deleted": deleted}
+
+@app.get("/api/explain/{video_id}")
+def explain_video(video_id: str):
+    """
+    Generates an AI explanation for why a detected outlier video
+    outperformed its channel's normal output. Called on demand when
+    a user clicks an outlier row in the dashboard.
+    """
+    db.init_db()
+
+    # Get the outlier record from the database
+    with db.get_conn() as conn:
+        with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+            cur.execute(
+                "SELECT * FROM outlier_log WHERE video_id = %s",
+                (video_id,)
+            )
+            outlier = cur.fetchone()
+
+    if not outlier:
+        return {"error": "Video not found in outlier log"}
+
+    # Get recent titles from the same channel for context
+    with db.get_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT DISTINCT title FROM video_snapshots
+                WHERE channel_id = %s AND video_id != %s
+                ORDER BY title
+                LIMIT 15
+            """, (outlier["channel_id"], video_id))
+            recent_titles = [row[0] for row in cur.fetchall()]
+
+    try:
+        from src.ai_explainer import explain_outlier
+        explanation = explain_outlier(
+            video_id=video_id,
+            title=outlier["title"],
+            multiplier=outlier["multiplier"],
+            z_score=outlier["z_score"],
+            recent_titles=recent_titles,
+        )
+        return {
+            "video_id": video_id,
+            "title": outlier["title"],
+            "why": explanation.why,
+            "pattern": explanation.pattern,
+            "next_idea": explanation.next_idea,
+            "transcript_used": explanation.transcript_used,
+        }
+    except Exception as e:
+        return {"error": str(e)}
