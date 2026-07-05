@@ -459,3 +459,8 @@ def explain_video(video_id: str):
         }
     except Exception as e:
         return {"error": str(e)}
+    
+@app.get("/privacy", response_class=HTMLResponse)
+def privacy():
+    """Serves the privacy policy page."""
+    return HTMLResponse(content=open("privacy.html").read())
