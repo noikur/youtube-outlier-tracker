@@ -1,94 +1,69 @@
 # YouTube Outlier Tracker
 
-A learning project: detects when a video on a tracked YouTube channel
-dramatically outperforms that channel's own recent normal output (an
-"outlier"), using only the free YouTube Data API.
+A full-stack tool that detects when a YouTube video dramatically
+outperforms its channel's own historical baseline — and explains
+*why* it worked using AI.
 
-## How it works
+## Live Demo
 
-1. **`src/youtube_client.py`** — talks to YouTube's API, designed
-   around the quota system (1-unit calls only, batched, never
-   `search.list`).
-2. **`src/outlier_engine.py`** — pure statistics, no network. Compares
-   each video to a rolling baseline of that same channel's older
-   videos (mean + standard deviation), flags anything that's both a
-   big multiplier AND a big z-score above normal.
-3. **`src/main.py`** — wires the two together: pull data, score it,
-   print outliers.
+**Dashboard:** https://youtube-outlier-tracker-production.up.railway.app/dashboard
 
-The engine and the client are deliberately separate. The engine has
-zero network dependency, so it's instantly testable; the client is
-the only part that needs a real API key.
+The Chrome extension overlays real-time badges directly onto YouTube
+thumbnails as you browse. Click any outlier on the dashboard to get
+a Claude-powered breakdown of why it outperformed and what to make next.
 
-## Setup
+## What it does
+
+- Detects outlier videos using z-score and multiplier statistics
+  relative to each channel's own recent baseline (not YouTube's
+  generic trending algorithm)
+- Scores any channel it encounters automatically — no manual setup
+- Filters out noise (Topic channels, high-variance baselines,
+  insufficient history)
+- Explains outliers with AI: why it worked, the reusable pattern,
+  and a specific next video idea
+- Tracks velocity over time so rising videos are flagged before
+  they fully break out
+
+## Stack
+
+- **Backend:** Python, FastAPI, deployed on Railway
+- **Database:** PostgreSQL
+- **Extension:** Chrome Extension (Manifest V3), content script,background service worker
+- **AI:** Anthropic Claude API (explanation layer)
+- **Data:** YouTube Data API v3 (quota-optimised: ~3 units per channel, never uses search.list)
+- **Testing:** pytest, 39 tests, zero network dependency in CI
+
+## Setup (local development)
 
 ```bash
+git clone https://github.com/noikur/youtube-outlier-tracker
 cd youtube-outlier-tracker
-python3 -m venv venv
-source venv/bin/activate          # on Windows: venv\Scripts\activate
+python -m venv venv
+venv\Scripts\activate        # Windows
 pip install -r requirements.txt
+pip install youtube-transcript-api
+cp .env.example .env
+# Add YOUTUBE_API_KEY and ANTHROPIC_API_KEY to .env
+python run_api.py
 ```
+Load the `extension/` folder as an unpacked extension in Chrome
+(`chrome://extensions` → Developer mode → Load unpacked).
 
-### Get a YouTube Data API key (takes ~5 minutes, free)
+## Key technical decisions
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-   and create a new project (or use an existing one).
-2. In the search bar, find **"YouTube Data API v3"** and click
-   **Enable**.
-3. Go to **APIs & Services → Credentials → Create Credentials → API key**.
-4. Copy the key. (Optional but recommended: click "Restrict key" and
-   limit it to the YouTube Data API v3, so a leaked key can't be used
-   for other Google services.)
-5. Copy `.env.example` to `.env` and paste your key in:
-   ```bash
-   cp .env.example .env
-   # then edit .env and set YOUTUBE_API_KEY=your_actual_key
-   ```
+**Why z-score + multiplier, not just views?** 
+A consistent channel with low variance produces huge z-scores from small bumps. A chaotic
+channel needs a bigger multiplier to register as genuinely unusual. Both checks together filter 
+out noise that either metric alone misses.
 
-You get **10,000 free quota units per day**, no billing setup
-required. This project is designed to use roughly 3 units per tracked
-channel per run, so even tracking 50 channels costs ~150 units — you
-have a lot of headroom.
+**Why playlist walking instead of search.list?** 
+search.list costs 100 quota units per call. channels.list + playlistItems.list +
+videos.list (batched 50 at a time) costs 3 units total per channel. Same data, 97% cheaper.
 
-### Add channels to track
+**Why Postgres instead of SQLite?** 
+Railway's filesystem resets on every deployment. SQLite would wipe the database on every push.
+Postgres runs as a separate service that persists independently.
 
-Edit `src/config.py` and add real channel IDs (the `UC...` ones, not
-`@handles`) to `TRACKED_CHANNEL_IDS`. Pick a niche you actually know,
-so you can tell whether the results make sense.
-
-### Run it
-
-```bash
-# Run the tests (no API key or network needed for these):
-python3 -m pytest tests/ -v
-
-# Run the synthetic-data demo (no API key needed):
-python3 demo.py
-
-# Run the real pipeline against YouTube (needs YOUTUBE_API_KEY set):
-python3 -m src.main
-```
-
-Note the `-m src.main` — running `python3 src/main.py` directly won't
-resolve the `src` package import correctly.
-
-## What's next (not built yet)
-
-- **Persistence**: right now every run recomputes from scratch. The
-  next step is a small SQLite database that stores video snapshots
-  over time, so we can track *when* a video started breaking out, not
-  just whether it currently looks like an outlier.
-- **Faster polling on a hot subset**: once we have persistence, we can
-  poll a small "currently rising" subset of channels more frequently
-  to catch early velocity instead of only flagging videos that have
-  already fully matured into obvious outliers.
-- **AI explanation layer**: feed a detected outlier's title/transcript
-  to Claude and get a short "why this probably worked" breakdown.
-- **A simple dashboard**: a web UI instead of printed terminal output.
-
-## A note on the YouTube API Terms of Service
-
-Google's terms restrict storing API data long-term beyond certain
-windows and prohibit using multiple projects to multiply your quota.
-Worth reading before you build anything you plan to put in front of
-real users: https://developers.google.com/youtube/terms/api-services-terms-of-service
+## License
+MIT
